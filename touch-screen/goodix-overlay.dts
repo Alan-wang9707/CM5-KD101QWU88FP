@@ -1,0 +1,81 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&gpio>;
+		__overlay__ {
+			goodix_pins: goodix_pins {
+				brcm,pins = <27 17>; // interrupt and reset
+				brcm,function = <0 0>; // in
+				brcm,pull = <2 2>; // pull-up
+			};
+		};
+	};
+
+	i2c_frag: fragment@1 {
+		target = <&i2c_csi_dsi>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			gt928: gt928@14 {
+				compatible = "goodix,KD-gt928" ;
+				reg = <0x14>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&goodix_pins>;
+				irq-gpios = <&gpio 27 0>; // Pin13 on GPIO header
+				reset-gpios = <&gpio 17 0>; // Pin11 on GPIO header
+
+				
+				AVDD28-supply = <&vdd_avdd28_touch>;
+				VDDIO-supply  = <&vdd_vddio_touch>;
+
+				/* 添加坐标反转属性（按需选择） */
+				//touchscreen-inverted-x;
+				//touchscreen-inverted-y;
+				//touchscreen-swapped-x-y;
+				
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path = "/";
+		__overlay__ {
+			
+			vdd_avdd28_touch: regulator-avdd28-touch {
+				compatible = "regulator-fixed";
+				regulator-name = "AVDD28";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-always-on;
+			};
+
+			
+			vdd_vddio_touch: regulator-vddio-touch {
+				compatible = "regulator-fixed";
+				regulator-name = "VDDIO";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+		};
+	};
+
+	__overrides__ {
+		addr = <&gt928>,"reg:0";
+		interrupt = <&goodix_pins>,"brcm,pins:0",
+            <&gt928>,"interrupts:0",
+            <&gt928>,"irq-gpios:4";
+		reset = <&goodix_pins>,"brcm,pins:4",
+        	<&gt928>,"reset-gpios:4";
+	    
+		invert_x  = <&gt928>, "touchscreen-inverted-x?";
+		invert_y  = <&gt928>, "touchscreen-inverted-y?";
+		swap_xy   = <&gt928>, "touchscreen-swapped-x-y?";
+
+	};
+};

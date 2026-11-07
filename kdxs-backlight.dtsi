@@ -1,0 +1,39 @@
+/*
+ * kdsx rpi5 dsi backlight overlay
+ */
+fragment@4{
+    target = <&rp1_gpio>;
+    __overlay__{
+        pwm_pins: pwm_pins{
+            pins = "gpio13";
+            function = "pwm0";
+        };
+    };
+};
+
+fragment@5{
+    target = <&pwm0>;
+    __overlay__{
+        pinctrl-names = "default";
+        pinctrl-0 = <&pwm_pins>;
+        status = "okay"; 
+    };
+}; 
+
+fragment@6{
+    target-path = "/";
+    __overlay__{
+        rpi_backlight: rpi_backlight{
+            compatible = "pwm-backlight";
+            brightness-levels = <0 12 16 24 32 40 48 64 96 128 160 192 224 255>;
+            default-brightness-level = <11>;
+            pwms = <&pwm0 1 1000000 0>; 
+            power-supply = <&reg_3v3>;
+            status = "okay";
+        };
+    };
+};
+
+
+
+
