@@ -1,0 +1,83 @@
+/*
+ * vc4-kms-dsi-hx8279-10inch-overlay.dts
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+
+/ {
+	compatible = "brcm,bcm2712";
+
+	// 新增：虚拟电源节点（驱动强制要求，没有就不工作）
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			reg_3v3: fixedregulator {
+				compatible = "regulator-fixed";
+				regulator-name = "3v3";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				status = "okay";
+			};
+		};
+	};
+
+	dsi_frag: fragment@1 {
+    target = <&dsi1>;
+    __overlay__  {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "okay";
+        
+        // ========== 关键新增：启用命令模式 ==========
+        //raspberrypi,dsi-command-mode;
+        // ===========================================
+
+        port {
+            dsi_out: endpoint {
+                remote-endpoint = <&panel_in>;
+            };
+        };
+
+        dsi_panel: dsi_panel@0 {
+            reg = <0>;
+            compatible = "kdxs,himax8279";
+            reset-gpios = <&rp1_gpio 4 GPIO_ACTIVE_LOW>;
+            power-supply = <&reg_3v3>;
+            backlight = <&rpi_backlight>;
+
+            port {
+                panel_in: endpoint {
+                    remote-endpoint = <&dsi_out>;
+                };
+            };
+        };
+    };
+};
+
+	fragment@2 {
+		target = <&i2c0if>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	#include "kdxs-backlight.dtsi"
+
+
+	__overrides__ {
+		dsi0 = <&dsi_frag>, "target:0=",<&dsi0>;
+		rotation = <&dsi_panel>, "rotation:0";
+	};
+};
